@@ -1,15 +1,14 @@
 """Test that ZDO requests behave the same with and without a quirk.
 
-`zigpy.quirks.get_device()` returns a plain `zigpy.device.Device` subclass,
-so a quirked device cannot carry any `ZbossZDO` method overrides. Every ZDO
-request is therefore translated on the outgoing packet instead, and both
-kinds of device must end up sending the same NCP command and returning the
-same value.
+A quirked device is a plain `zigpy.device.Device` subclass, so it cannot
+carry any `ZbossZDO` method overrides. Every ZDO request is therefore
+translated on the outgoing packet instead, and both kinds of device must
+end up sending the same NCP command and returning the same value.
 """
 import pytest
+import zigpy.device
 import zigpy.endpoint
 import zigpy.exceptions
-import zigpy.quirks
 import zigpy.types as zigpy_t
 import zigpy.zdo
 import zigpy.zdo.types as zdo_t
@@ -46,9 +45,7 @@ async def _start(make_application, quirked):
     device = app.add_initialized_device(ieee=DEVICE_IEEE, nwk=DEVICE_NWK)
 
     if quirked:
-        device = zigpy.quirks.CustomDevice(
-            app, device.ieee, device.nwk, device
-        )
+        device = zigpy.device.Device(app, device.ieee, device.nwk)
         app.devices[device.ieee] = device
         device.add_endpoint(1).status = zigpy.endpoint.Status.ZDO_INIT
 
