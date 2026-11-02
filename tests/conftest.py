@@ -20,6 +20,9 @@ from zigpy_zboss.zigbee.application import ControllerApplication
 LOGGER = logging.getLogger(__name__)
 
 FAKE_SERIAL_PORT = "/dev/ttyFAKE0"
+# Literal: zigpy.zgp.types.GP_ENDPOINT is missing on zigpy 1.6.0 and 2.0.x, which
+# the requirement still allows.
+GP_ENDPOINT = 242
 
 
 # Globally handle async tests and error on unawaited coroutines
@@ -269,6 +272,22 @@ class BaseServerZBOSS(ZBOSS):
 
     align_structs = False
     version = None
+
+    # Registered by the __init__ loop of the subclasses, the bare server stays
+    # without responders.
+    @reply_to(c.APS.DataReq.Req(partial=True, SrcEndpoint=GP_ENDPOINT))
+    def on_green_power_request(self, req):
+        """Confirm the Green Power broadcast zigpy 2.4 sends from permit()."""
+        return c.APS.DataReq.Rsp(
+            TSN=req.TSN,
+            StatusCat=t.StatusCategory(1),
+            StatusCode=t.StatusCodeGeneric.OK,
+            DstAddr=req.DstAddr,
+            DstEndpoint=req.DstEndpoint,
+            SrcEndpoint=req.SrcEndpoint,
+            TxTime=1,
+            DstAddrMode=req.DstAddrMode,
+        )
 
     async def _flatten_responses(self, request, responses):
         if responses is None:

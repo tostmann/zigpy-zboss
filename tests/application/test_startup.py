@@ -183,45 +183,47 @@ async def test_info(make_application, caplog):
             CoordinatorVersion=coordinator_version)]
     )
 
+    # Match these three without a TSN: zigpy 2.4 takes one more for the Green Power
+    # broadcast it sends before them.
     zboss_server.reply_once_to(
         request=c.ZDO.PermitJoin.Req(
-            TSN=20,
+            partial=True,
             DestNWK=t.NWK(
                 zigpy.types.BroadcastAddress.ALL_ROUTERS_AND_COORDINATOR
             ),
             PermitDuration=t.uint8_t(0),
             TCSignificance=t.uint8_t(0),
         ),
-        responses=[c.ZDO.PermitJoin.Rsp(
-            TSN=20,
+        responses=lambda req: c.ZDO.PermitJoin.Rsp(
+            TSN=req.TSN,
             StatusCat=t.StatusCategory(4),
             StatusCode=t.StatusCodeGeneric.OK,
-        )]
+        ),
     )
 
     zboss_server.reply_once_to(
         request=c.ZDO.PermitJoin.Req(
-            TSN=21,
+            partial=True,
             DestNWK=t.NWK(0x0000),
             PermitDuration=t.uint8_t(0),
             TCSignificance=t.uint8_t(0x01),
         ),
-        responses=[c.ZDO.PermitJoin.Rsp(
-            TSN=21,
+        responses=lambda req: c.ZDO.PermitJoin.Rsp(
+            TSN=req.TSN,
             StatusCat=t.StatusCategory(4),
             StatusCode=t.StatusCodeGeneric.OK,
-        )]
+        ),
     )
 
     zboss_server.reply_once_to(
         request=c.NcpConfig.NCPModuleReset.Req(
-            TSN=22, Option=t.ResetOptions(0)
+            partial=True, Option=t.ResetOptions(0)
         ),
-        responses=[c.NcpConfig.NCPModuleReset.Rsp(
-            TSN=22,
+        responses=lambda req: c.NcpConfig.NCPModuleReset.Rsp(
+            TSN=req.TSN,
             StatusCat=t.StatusCategory(4),
             StatusCode=t.StatusCodeGeneric.OK
-        )]
+        ),
     )
 
     await app.startup(auto_form=False)
